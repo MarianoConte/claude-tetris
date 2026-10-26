@@ -43,11 +43,33 @@
       </aside>
     </div>
 
-    <div id="overlay" class="overlay hidden">
+    <div id="overlay" class="overlay">
       <div class="overlay-box">
-        <p id="overlay-title">GAME OVER</p>
+        <p id="overlay-title">TETRIS</p>
         <p id="overlay-score"></p>
-        <button id="restart-btn">Reiniciar</button>
+        <div id="name-entry" class="name-entry hidden">
+          <label for="name-input">¡Nuevo récord! Tu nombre:</label>
+          <div class="name-row">
+            <input id="name-input" type="text" maxlength="12" autocomplete="off" placeholder="Anónimo" />
+            <button id="save-btn" type="button">Guardar</button>
+          </div>
+        </div>
+        <button id="restart-btn">Jugar</button>
+        <div id="records-panel" class="records-panel hidden">
+          <span class="label">MEJORES PUNTUACIONES</span>
+          <table id="records-table">
+            <thead><tr><th>#</th><th>Nombre</th><th>Puntos</th><th>Líneas</th><th>Nivel</th><th>Fecha</th></tr></thead>
+            <tbody id="records-body"></tbody>
+          </table>
+          <p id="stats-line" class="stats-line"></p>
+          <div class="clear-row">
+            <button id="clear-btn" type="button" class="link-btn">Borrar records</button>
+            <span id="clear-confirm" class="hidden">¿Seguro?
+              <button id="clear-yes" type="button" class="link-btn">Sí</button>
+              <button id="clear-no" type="button" class="link-btn">No</button>
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
