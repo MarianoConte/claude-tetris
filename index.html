@@ -37,7 +37,7 @@
             <li><kbd>↑</kbd> rotar</li>
             <li><kbd>↓</kbd> bajar</li>
             <li><kbd>Space</kbd> caída</li>
-            <li><kbd>P</kbd> pausa</li>
+            <li><kbd>P</kbd> / <kbd>Esc</kbd> pausa</li>
           </ul>
         </div>
       </aside>
@@ -48,6 +48,26 @@
         <p id="overlay-title">GAME OVER</p>
         <p id="overlay-score"></p>
         <button id="restart-btn">Reiniciar</button>
+
+        <div id="pause-menu" class="pause-menu hidden" role="menu">
+          <button id="resume-btn" class="menu-item" role="menuitem">Reanudar</button>
+          <button id="menu-restart-btn" class="menu-item" role="menuitem">Reiniciar</button>
+          <button id="controls-btn" class="menu-item" role="menuitem" aria-expanded="false" aria-controls="menu-controls">Ver controles</button>
+          <ul id="menu-controls" class="menu-controls hidden">
+            <li><kbd>←</kbd><kbd>→</kbd> mover</li>
+            <li><kbd>↑</kbd> / <kbd>X</kbd> rotar</li>
+            <li><kbd>↓</kbd> bajar</li>
+            <li><kbd>Space</kbd> caída</li>
+            <li><kbd>P</kbd> / <kbd>Esc</kbd> pausa</li>
+          </ul>
+          <div id="level-row" class="menu-item level-row" tabindex="0" role="menuitem">
+            <span>Nivel inicial</span>
+            <button id="level-dec" tabindex="-1" aria-label="Bajar nivel inicial">−</button>
+            <span id="level-value">1</span>
+            <button id="level-inc" tabindex="-1" aria-label="Subir nivel inicial">+</button>
+          </div>
+          <p class="menu-hint">El nivel inicial se aplica en la próxima partida (Reiniciar).</p>
+        </div>
       </div>
     </div>
   </div>
