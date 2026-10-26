@@ -70,6 +70,15 @@ body {
   border-radius: 4px;
 }
 
+#skin-select {
+  background: #22223a;
+  color: #ccc;
+  border: 1px solid #3a3a5a;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
 /* ---- Controles ---- */
 .controls ul {
   list-style: none;
