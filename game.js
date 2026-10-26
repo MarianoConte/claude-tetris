@@ -41,8 +41,28 @@ const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
+const pauseMenu = document.getElementById('pause-menu');
+const resumeBtn = document.getElementById('resume-btn');
+const menuRestartBtn = document.getElementById('menu-restart-btn');
+const controlsBtn = document.getElementById('controls-btn');
+const menuControls = document.getElementById('menu-controls');
+const levelRow = document.getElementById('level-row');
+const levelValueEl = document.getElementById('level-value');
+const menuItems = [resumeBtn, menuRestartBtn, controlsBtn, levelRow];
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let startLevel = 1; // nivel inicial elegido en el menú de pausa (persiste entre partidas)
+let gameStartLevel = 1; // nivel inicial de la partida en curso (se fija en init)
+const pressed = new Set(); // teclas físicamente presionadas
+const blocked = new Set(); // teclas ignoradas hasta su keyup (evita movimientos al reanudar)
+
+function intervalForLevel(lv) {
+  return Math.max(100, 1000 - (lv - 1) * 90);
+}
+
+function blockHeldKeys() {
+  pressed.forEach(code => blocked.add(code));
+}
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -108,8 +128,8 @@ function clearLines() {
   if (cleared) {
     lines += cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
-    level = Math.floor(lines / 10) + 1;
-    dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+    level = Math.max(gameStartLevel,Math.floor(lines / 10) + 1);
+    dropInterval = intervalForLevel(level);
     updateHUD();
   }
 }
@@ -225,20 +245,70 @@ function endGame() {
   cancelAnimationFrame(animId);
   overlayTitle.textContent = 'GAME OVER';
   overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
+  pauseMenu.classList.add('hidden');
+  restartBtn.classList.remove('hidden');
   overlay.classList.remove('hidden');
+}
+
+function setStartLevel(lv) {
+  startLevel = Math.min(10, Math.max(1, lv));
+  levelValueEl.textContent = startLevel;
+}
+
+function setControlsOpen(open) {
+  menuControls.classList.toggle('hidden', !open);
+  controlsBtn.setAttribute('aria-expanded', String(open));
 }
 
 function togglePause() {
   if (gameOver) return;
   paused = !paused;
   if (!paused) {
+    overlay.classList.add('hidden');
+    pauseMenu.classList.add('hidden');
+    blockHeldKeys();
     lastTime = performance.now();
     loop(lastTime);
   } else {
     cancelAnimationFrame(animId);
     overlayTitle.textContent = 'PAUSA';
     overlayScore.textContent = '';
+    restartBtn.classList.add('hidden');
+    setControlsOpen(false);
+    pauseMenu.classList.remove('hidden');
     overlay.classList.remove('hidden');
+    resumeBtn.focus();
+  }
+}
+
+// Navegación por teclado dentro del menú de pausa
+function menuKey(e) {
+  const idx = menuItems.indexOf(document.activeElement);
+  if (idx < 0) {
+    // foco fuera de los ítems (body, botones +/-): Enter/Espacio usan el comportamiento nativo
+    if (e.code === 'Enter' || e.code === 'Space') return;
+    if (e.code.startsWith('Arrow')) { e.preventDefault(); resumeBtn.focus(); }
+    return;
+  }
+  switch (e.code) {
+    case 'ArrowUp':
+      e.preventDefault();
+      menuItems[(idx + menuItems.length - 1) % menuItems.length].focus();
+      break;
+    case 'ArrowDown':
+      e.preventDefault();
+      menuItems[(idx + 1) % menuItems.length].focus();
+      break;
+    case 'ArrowLeft':
+    case 'ArrowRight':
+      e.preventDefault();
+      if (menuItems[idx] === levelRow) setStartLevel(startLevel + (e.code === 'ArrowRight' ? 1 : -1));
+      break;
+    case 'Enter':
+    case 'Space':
+      e.preventDefault();
+      if (menuItems[idx] !== levelRow && !e.repeat) menuItems[idx].click();
+      break;
   }
 }
 
@@ -263,23 +333,35 @@ function init() {
   board = createBoard();
   score = 0;
   lines = 0;
-  level = 1;
+  gameStartLevel = startLevel;
+  level = gameStartLevel;
   paused = false;
   gameOver = false;
-  dropInterval = 1000;
+  dropInterval = intervalForLevel(level);
   dropAccum = 0;
   lastTime = performance.now();
   next = randomPiece();
   spawn();
   updateHUD();
   overlay.classList.add('hidden');
+  pauseMenu.classList.add('hidden');
+  blockHeldKeys();
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
 }
 
 document.addEventListener('keydown', e => {
-  if (e.code === 'KeyP') { togglePause(); return; }
-  if (paused || gameOver) return;
+  pressed.add(e.code);
+  if (e.code === 'KeyP' || e.code === 'Escape') {
+    if (!e.repeat) togglePause();
+    return;
+  }
+  if (paused) { menuKey(e); return; }
+  if (gameOver) return;
+  if (blocked.has(e.code)) {
+    if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
+    return;
+  }
   switch (e.code) {
     case 'ArrowLeft':
       if (!collide(current.shape, current.x - 1, current.y)) current.x--;
@@ -302,6 +384,24 @@ document.addEventListener('keydown', e => {
   updateHUD();
 });
 
+document.addEventListener('keyup', e => {
+  pressed.delete(e.code);
+  blocked.delete(e.code);
+  // evita el click nativo de Espacio al soltar sobre un botón del menú
+  if (e.code === 'Space' && paused) e.preventDefault();
+});
+
+window.addEventListener('blur', () => { pressed.clear(); blocked.clear(); });
+
 restartBtn.addEventListener('click', init);
+menuRestartBtn.addEventListener('click', init);
+resumeBtn.addEventListener('click', togglePause);
+controlsBtn.addEventListener('click', () => setControlsOpen(menuControls.classList.contains('hidden')));
+const levelDec = document.getElementById('level-dec');
+const levelInc = document.getElementById('level-inc');
+levelDec.addEventListener('click', () => setStartLevel(startLevel - 1));
+levelInc.addEventListener('click', () => setStartLevel(startLevel + 1));
+// no robar el foco al fila de nivel al hacer click en +/-
+[levelDec, levelInc].forEach(b => b.addEventListener('mousedown', e => e.preventDefault()));
 
 init();
